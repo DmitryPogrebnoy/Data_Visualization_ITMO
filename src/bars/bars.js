@@ -24,9 +24,8 @@ const y = d3.scaleBand()
 // Define x scale
 const x = d3.scaleLinear([0, 1], [margin.left, width - margin.right]);
 
-// Load data promise
-const dataPromise = loadData()
-
+// Load data
+const data = await loadData()
 
 function rank(names, value) {
     const data = Array.from(names, name => ({name, value: value(name)}));
@@ -38,15 +37,14 @@ function rank(names, value) {
 }
 
 // Number of frames per year
-const k = 12
+const k = 1
 
-async function computeFrames() {
-    const data = await dataPromise;
-    const brandNames = new Set(data.map((d) => d.name));
+async function computeFrames(data) {
+    const countryNames = new Set(data.map((d) => d.country));
     const rollupedData = d3.rollup(
-        data, ([d]) => d.value, (d) => d.date, (d) => d.name
+        data, ([d]) => d.deaths, (d) => d.date, (d) => d.country
     );
-    const dateValues =  Array.from(rollupedData).sort(([a], [b]) => d3.ascending(a, b))
+    const dateValues =  Array.from(rollupedData).sort(([a], [b]) => d3.ascending(a.key, b.key))
 
     let keyframes = [];
     let ka, a, kb, b;
@@ -55,11 +53,11 @@ async function computeFrames() {
             const t = i / k;
             keyframes.push([
                 new Date(ka * (1 - t) + kb * t),
-                rank(await brandNames, name => (a.get(name) || 0) * (1 - t) + (b.get(name) || 0) * t)
+                rank(countryNames, country => (a.get(country) || 0) * (1 - t) + (b.get(country) || 0) * t)
             ]);
         }
     }
-    keyframes.push([new Date(kb), rank(dateValues, name => b.get(name) || 0)]);
+    keyframes.push([new Date(kb), rank(dateValues, country => b.get(country) || 0)]);
 
     return keyframes;
 }
@@ -169,18 +167,18 @@ function ticker(svg, keyframes) {
 function color(data) {
     const scale = d3.scaleOrdinal(d3.schemeTableau10);
     if (data.some(d => d.category !== undefined)) {
-        const categoryByName = new Map(data.map(d => [d.name, d.category]))
+        const categoryByName = new Map(data.map(d => [d.country, d.category]))
         scale.domain(Array.from(categoryByName.values()));
-        return d => scale(categoryByName.get(d.name));
+        return d => scale(categoryByName.get(d.country));
     }
-    return d => scale(d.name);
+    return d => scale(d.country);
 }
 
 async function createAndRunBars() {
     let duration = 500;
-    let keyframes = await computeFrames();
+    let keyframes = await computeFrames(data);
 
-    let nameFrames = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name);
+    let nameFrames = d3.groups(keyframes.flatMap(([, data]) => data), d => d.country);
     let prevFrames = new Map(nameFrames.flatMap(([, data]) => d3.pairs(data, (a, b) => [b, a])));
     let nextFrames = new Map(nameFrames.flatMap(([, data]) => d3.pairs(data)));
 
