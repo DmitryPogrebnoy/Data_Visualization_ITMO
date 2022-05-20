@@ -227,7 +227,10 @@ async function createAndRunBars(svg, data) {
     const updateLabels = labels(svg, prevFrames, nextFrames);
     const updateTicker = ticker(svg, keyframes);
 
-    for (const keyframe of keyframes) {
+    const keyframesNumber = keyframes.length;
+    for (let i = 0; i < keyframesNumber; i++) {
+        let keyframe = keyframes[i];
+
         // Extract the top bar’s value.
         x.domain([0, keyframe[1][0].value]);
 
