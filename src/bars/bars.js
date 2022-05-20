@@ -204,7 +204,7 @@ function createColorLegend(svg, category, color) {
 }
 
 
-async function createAndRunBars(data) {
+async function createAndRunBars(svg, data) {
     let duration = 100;
     let keyframes = computeFrames(data);
 
@@ -212,7 +212,7 @@ async function createAndRunBars(data) {
     let prevFrames = new Map(nameFrames.flatMap(([, data]) => d3.pairs(data, (a, b) => [b, a])));
     let nextFrames = new Map(nameFrames.flatMap(([, data]) => d3.pairs(data)));
 
-    const svg = d3.select("body").append("svg").attr("viewBox", [0, 0, width, height]);
+    svg.attr("viewBox", [0, 0, width, height]);
 
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
     const categoryByName = new Map(data.map(d => [d.country, d.region]))
@@ -229,11 +229,7 @@ async function createAndRunBars(data) {
 
     for (const keyframe of keyframes) {
         // Extract the top bar’s value.
-        if (keyframe[1][0].value < 10) {
-            x.domain([0,10]);
-        } else {
-            x.domain([0, keyframe[1][0].value]);
-        }
+        x.domain([0, keyframe[1][0].value]);
 
         const transition = svg.transition()
             .duration(duration)
