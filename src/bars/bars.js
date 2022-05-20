@@ -14,6 +14,8 @@ const barSize = 48;
 const height = margin.top + barSize * n + margin.bottom;
 const width = 1300;
 
+const duration = 500;
+
 // Define y scale
 const y = d3.scaleBand()
     .domain(d3.range(n + 1))
@@ -33,7 +35,7 @@ function buildFrame(names, value) {
 }
 
 // Number of frames per day
-const k = 5
+const k = 1
 
 function computeFrames(data) {
     const countryNames = new Set(data.map((d) => d.country));
@@ -86,7 +88,7 @@ function bars(svg, prev, next, color) {
 function labels(svg, prev, next) {
     // Create labels
     let label = svg.append("g")
-        .style("font", "bold 12px var(--sans-serif)")
+        .style("font", "12px Montserrat")
         .style("font-variant-numeric", "tabular-nums")
         .attr("text-anchor", "end")
         .selectAll("text");
@@ -163,7 +165,7 @@ function ticker(svg, keyframes) {
     const formatDate = d3.utcFormat("%d %B %Y")
 
     const now = svg.append("text")
-        .style("font", "bold var(--sans-serif)")
+        .style("font", "bold Montserrat")
         .style("font-size", `${barSize/2}px`)
         .style("font-variant-numeric", "tabular-nums")
         .attr("text-anchor", "end")
@@ -204,29 +206,48 @@ function createColorLegend(svg, category, color) {
 }
 
 
-async function createAndRunBars(svg, data) {
-    let duration = 100;
-    let keyframes = computeFrames(data);
+let keyframes;
+let nameToFrames;
+let prevFrames;
+let nextFrames;
 
-    let nameFrames = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name);
-    let prevFrames = new Map(nameFrames.flatMap(([, data]) => d3.pairs(data, (a, b) => [b, a])));
-    let nextFrames = new Map(nameFrames.flatMap(([, data]) => d3.pairs(data)));
+const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
-    svg.attr("viewBox", [0, 0, width, height]);
+let updateBars;
+let updateAxis;
+let updateLabels;
+let updateTicker;
 
-    const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
+function buildBarsFrameAndPrepareData(svg, data) {
+    svg.attr("id", "bars").attr("viewBox", [0, 0, width, height]);
+
+    if (keyframes === undefined) {
+        keyframes = computeFrames(data);
+    }
+    if (nameToFrames === undefined) {
+        nameToFrames = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name);
+    }
+    if (prevFrames === undefined) {
+        prevFrames = new Map(nameToFrames.flatMap(([, data]) => d3.pairs(data, (a, b) => [b, a])));
+    }
+    if (nextFrames === undefined) {
+        nextFrames = new Map(nameToFrames.flatMap(([, data]) => d3.pairs(data)));
+    }
+
     const categoryByName = new Map(data.map(d => [d.country, d.region]))
     colorScale.domain(Array.from(categoryByName.values()));
-
     const categorySet = Array.from(new Set(categoryByName.values())).sort((a, b) => d3.ascending(a,b))
     createColorLegend(svg, categorySet, colorScale)
 
     const updateColor = d => colorScale(categoryByName.get(d.name));
-    const updateBars = bars(svg, prevFrames, nextFrames, updateColor);
-    const updateAxis = axis(svg);
-    const updateLabels = labels(svg, prevFrames, nextFrames);
-    const updateTicker = ticker(svg, keyframes);
+    updateBars = bars(svg, prevFrames, nextFrames, updateColor);
+    updateAxis = axis(svg);
+    updateLabels = labels(svg, prevFrames, nextFrames);
+    updateTicker = ticker(svg, keyframes);
+}
 
+
+async function runBars(svg) {
     const keyframesNumber = keyframes.length;
     for (let i = 0; i < keyframesNumber; i++) {
         let keyframe = keyframes[i];
@@ -247,4 +268,4 @@ async function createAndRunBars(svg, data) {
     }
 }
 
-export { createAndRunBars };
+export { runBars, buildBarsFrameAndPrepareData };

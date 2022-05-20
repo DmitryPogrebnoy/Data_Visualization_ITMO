@@ -1,4 +1,4 @@
-import {createAndRunBars} from "./bars/bars.js";
+import {runBars, buildBarsFrameAndPrepareData} from "./bars/bars.js";
 import {loadData} from "./common/loadData.js";
 
 // Load data
@@ -14,7 +14,7 @@ head.append("h1").text("Covid-19 Country Spread")
 
 // Fuck this radio button's labels!
 const main_button_panel = body.append("div").attr("id", "main_button_panel").attr("align", "center")
-main_button_panel.append("label")
+const mapChartButton = main_button_panel.append("label")
     .text("Map Chart")
     .style("font-family", "Montserrat")
     .style("margin-right", "4em")
@@ -23,7 +23,7 @@ main_button_panel.append("label")
     .attr("type", "radio")
     .attr("name", "chart_type")
 
-main_button_panel.append("label")
+const barChartButton = main_button_panel.append("label")
     .text("Bar Chart")
     .style("font-family", "Montserrat")
     .insert("input")
@@ -45,12 +45,14 @@ const main_panel = body.append("div").attr("id", "main_panel");
 
 var svg = main_panel.append("svg");
 
+
 main_panel.append("button")
     .text("Repeat")
     .on("click", async function () {
         svg.remove();
         svg = main_panel.append("svg");
-        await createAndRunBars(svg, data);
+        await runBars(svg, data);
     })
 
-await createAndRunBars(svg, data);
+buildBarsFrameAndPrepareData(svg, data);
+await runBars(svg);
