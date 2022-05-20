@@ -37,7 +37,7 @@ function rank(names, value) {
 }
 
 // Number of frames per year
-const k = 1
+const k = 4
 
 async function computeFrames(data) {
     const countryNames = new Set(data.map((d) => d.country));
@@ -178,7 +178,7 @@ async function createAndRunBars() {
     let duration = 500;
     let keyframes = await computeFrames(data);
 
-    let nameFrames = d3.groups(keyframes.flatMap(([, data]) => data), d => d.country);
+    let nameFrames = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name);
     let prevFrames = new Map(nameFrames.flatMap(([, data]) => d3.pairs(data, (a, b) => [b, a])));
     let nextFrames = new Map(nameFrames.flatMap(([, data]) => d3.pairs(data)));
 
