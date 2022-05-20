@@ -91,6 +91,8 @@ function labels(svg, prev, next) {
         .attr("text-anchor", "end")
         .selectAll("text");
 
+    let is_enough_space_for_label = d => x(d.value) > 100;
+
     // Return function for update
     return ([date, data], transition) => label = label
         .data(data.slice(0, n), d => d.name)
@@ -112,7 +114,20 @@ function labels(svg, prev, next) {
                 .call(g => g.select("tspan").tween("text", d => textTween(d.value, (next.get(d) || d).value)))
         )
         .call(bar => bar.transition(transition)
-            .attr("transform", d => `translate(${x(d.value)},${y(d.rank)})`)
+            .attr("text-anchor", d => {
+                if (is_enough_space_for_label(d)){
+                    return "end"
+                } else {
+                    return "start"
+                }
+            })
+            .attr("transform", d => {
+                if (is_enough_space_for_label(d)) {
+                    return `translate(${x(d.value)},${y(d.rank)})`
+                } else {
+                    return `translate(${x(d.value)+10},${y(d.rank)})`
+                }
+            })
             .call(g => g.select("tspan").tween("text", d => textTween((prev.get(d) || d).value, d.value))))
 }
 
