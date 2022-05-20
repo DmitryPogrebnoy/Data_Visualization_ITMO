@@ -36,8 +36,8 @@ function rank(names, value) {
     return data;
 }
 
-// Number of frames per year
-const k = 4
+// Number of frames per day
+const k = 5
 
 async function computeFrames(data) {
     const countryNames = new Set(data.map((d) => d.country));
@@ -63,7 +63,7 @@ async function computeFrames(data) {
 }
 
 
-function bars(svg, prev, next) {
+function bars(svg, prev, next, color) {
     let bar = svg.append("g")
         .attr("fill-opacity", 0.6)
         .selectAll("rect");
@@ -72,7 +72,7 @@ function bars(svg, prev, next) {
         .data(data.slice(0, n), d => d.name)
         .join(
             enter => enter.append("rect")
-                .attr("fill", color(data))
+                .attr("fill", color)
                 .attr("height", y.bandwidth())
                 .attr("x", x(0))
                 .attr("y", d => y((prev.get(d) || d).rank))
@@ -166,16 +166,13 @@ function ticker(svg, keyframes) {
 
 function color(data) {
     const scale = d3.scaleOrdinal(d3.schemeTableau10);
-    if (data.some(d => d.category !== undefined)) {
-        const categoryByName = new Map(data.map(d => [d.country, d.category]))
-        scale.domain(Array.from(categoryByName.values()));
-        return d => scale(categoryByName.get(d.country));
-    }
-    return d => scale(d.country);
+    const categoryByName = new Map(data.map(d => [d.country, d.sub_region]))
+    scale.domain(Array.from(categoryByName.values()));
+    return d => scale(categoryByName.get(d.name));
 }
 
 async function createAndRunBars() {
-    let duration = 500;
+    let duration = 100;
     let keyframes = await computeFrames(data);
 
     let nameFrames = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name);
@@ -184,7 +181,7 @@ async function createAndRunBars() {
 
     const svg = d3.select("body").append("svg").attr("viewBox", [0, 0, width, height]);
 
-    const updateBars = bars(svg, prevFrames, nextFrames);
+    const updateBars = bars(svg, prevFrames, nextFrames, color(data));
     const updateAxis = axis(svg);
     const updateLabels = labels(svg, prevFrames, nextFrames);
     const updateTicker = ticker(svg, keyframes);
@@ -212,7 +209,6 @@ async function createAndRunBars() {
 
         await transition.end();
     }
-    svg.remove()
 }
 
 export { createAndRunBars };
