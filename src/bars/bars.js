@@ -1,7 +1,5 @@
-import {loadData} from "../common/loadData.js";
-
 const margin = {
-    top: 32,
+    top: 80,
     right: 6,
     bottom: 6,
     left: 6
@@ -14,7 +12,7 @@ const barSize = 48;
 
 //Set height and width for svg view
 const height = margin.top + barSize * n + margin.bottom;
-const width = 900;
+const width = 1300;
 
 // Define y scale
 const y = d3.scaleBand()
@@ -24,10 +22,8 @@ const y = d3.scaleBand()
 // Define x scale
 const x = d3.scaleLinear([0, 1], [margin.left, width - margin.right]);
 
-// Load data
-const data = await loadData()
-
-function rank(names, value) {
+// Frame {name, value, rank}
+function buildFrame(names, value) {
     const data = Array.from(names, name => ({name, value: value(name)}));
     data.sort((a, b) => d3.descending(a.value, b.value));
     for (let i = 0; i < data.length; ++i) {
@@ -39,7 +35,7 @@ function rank(names, value) {
 // Number of frames per day
 const k = 5
 
-async function computeFrames(data) {
+function computeFrames(data) {
     const countryNames = new Set(data.map((d) => d.country));
     const rollupedData = d3.rollup(
         data, ([d]) => d.deaths, (d) => d.date, (d) => d.country
@@ -53,21 +49,21 @@ async function computeFrames(data) {
             const t = i / k;
             keyframes.push([
                 new Date(ka * (1 - t) + kb * t),
-                rank(countryNames, country => (a.get(country) || 0) * (1 - t) + (b.get(country) || 0) * t)
+                buildFrame(countryNames, country => (a.get(country) || 0) * (1 - t) + (b.get(country) || 0) * t)
             ]);
         }
     }
-    keyframes.push([new Date(kb), rank(dateValues, country => b.get(country) || 0)]);
+    keyframes.push([new Date(kb), buildFrame(dateValues, country => b.get(country) || 0)]);
 
     return keyframes;
 }
 
 
 function bars(svg, prev, next, color) {
-    let bar = svg.append("g")
-        .attr("fill-opacity", 0.6)
-        .selectAll("rect");
+    // Create bars
+    let bar = svg.append("g").selectAll("rect");
 
+    // Return function for update
     return ([date, data], transition) => bar = bar
         .data(data.slice(0, n), d => d.name)
         .join(
@@ -88,12 +84,14 @@ function bars(svg, prev, next, color) {
 }
 
 function labels(svg, prev, next) {
+    // Create labels
     let label = svg.append("g")
         .style("font", "bold 12px var(--sans-serif)")
         .style("font-variant-numeric", "tabular-nums")
         .attr("text-anchor", "end")
         .selectAll("text");
 
+    // Return function for update
     return ([date, data], transition) => label = label
         .data(data.slice(0, n), d => d.name)
         .join(
@@ -164,16 +162,36 @@ function ticker(svg, keyframes) {
     };
 }
 
-function color(data) {
-    const scale = d3.scaleOrdinal(d3.schemeTableau10);
-    const categoryByName = new Map(data.map(d => [d.country, d.sub_region]))
-    scale.domain(Array.from(categoryByName.values()));
-    return d => scale(categoryByName.get(d.name));
+function createColorLegend(svg, category, color) {
+    // Add one dot in the legend for each name.
+    const size = 20
+    svg.selectAll("mydots")
+        .data(category)
+        .enter()
+        .append("rect")
+        .attr("x", (d, i) => width - 300 + Math.floor(i/2)*100)
+        .attr("y", (d, i) => 10 + (i%2)*(size+5))
+        .attr("width", size)
+        .attr("height", size)
+        .style("fill", (d) => color(d))
+
+    // Add one dot in the legend for each name.
+    svg.selectAll("mylabels")
+        .data(category)
+        .enter()
+        .append("text")
+        .attr("x", (d, i) => width - 300 + Math.floor(i/2)*100 + size*1.2)
+        .attr("y", (d, i) => 10 + (i%2)*(size+5) + (size/2)) // 100 is where the first dot appears. 25 is the distance between dots
+        .style("fill", (d) => color(d))
+        .text((d) => d)
+        .attr("text-anchor", "left")
+        .style("alignment-baseline", "middle")
 }
 
-async function createAndRunBars() {
+
+async function createAndRunBars(data) {
     let duration = 100;
-    let keyframes = await computeFrames(data);
+    let keyframes = computeFrames(data);
 
     let nameFrames = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name);
     let prevFrames = new Map(nameFrames.flatMap(([, data]) => d3.pairs(data, (a, b) => [b, a])));
@@ -181,16 +199,20 @@ async function createAndRunBars() {
 
     const svg = d3.select("body").append("svg").attr("viewBox", [0, 0, width, height]);
 
-    const updateBars = bars(svg, prevFrames, nextFrames, color(data));
+    const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
+    const categoryByName = new Map(data.map(d => [d.country, d.region]))
+    colorScale.domain(Array.from(categoryByName.values()));
+
+    const categorySet = Array.from(new Set(categoryByName.values())).sort((a, b) => d3.ascending(a,b))
+    createColorLegend(svg, categorySet, colorScale)
+
+    const updateColor = d => colorScale(categoryByName.get(d.name));
+    const updateBars = bars(svg, prevFrames, nextFrames, updateColor);
     const updateAxis = axis(svg);
     const updateLabels = labels(svg, prevFrames, nextFrames);
     const updateTicker = ticker(svg, keyframes);
 
     for (const keyframe of keyframes) {
-        if (!keyframe[1]) {
-            continue
-        }
-
         // Extract the top bar’s value.
         if (keyframe[1][0].value < 10) {
             x.domain([0,10]);
