@@ -147,7 +147,7 @@ function axis(svg) {
 
 
 function ticker(svg, keyframes) {
-    const formatDate = d3.utcFormat("%B %Y")
+    const formatDate = d3.utcFormat("%d %B %Y")
 
     const now = svg.append("text")
         .style("font", "bold var(--sans-serif)")
@@ -194,12 +194,16 @@ async function createAndRunBars() {
             continue
         }
 
+        // Extract the top bar’s value.
+        if (keyframe[1][0].value < 10) {
+            x.domain([0,10]);
+        } else {
+            x.domain([0, keyframe[1][0].value]);
+        }
+
         const transition = svg.transition()
             .duration(duration)
             .ease(d3.easeLinear);
-
-        // Extract the top bar’s value.
-        x.domain([0, keyframe[1][0].value]);
 
         updateAxis(keyframe, transition);
         updateBars(keyframe, transition);
