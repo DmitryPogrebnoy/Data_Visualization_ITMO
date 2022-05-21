@@ -1,4 +1,4 @@
-import {runBars, buildBarsFrameAndPrepareData} from "./bars/bars.js";
+import {runBars, stopBars, prepareBarData, buildBarFrame} from "./bars/bars.js";
 import {loadData} from "./common/loadData.js";
 
 // Load data
@@ -14,23 +14,31 @@ head.append("h1").text("Covid-19 Country Spread")
 
 // Fuck this radio button's labels!
 const main_button_panel = body.append("div").attr("id", "main_button_panel").attr("align", "center")
-const mapChartButton = main_button_panel.append("label")
+const mapChartButton = main_button_panel
+    .append("button")
+    .attr("id", "map_button")
     .text("Map Chart")
     .style("font-family", "Montserrat")
-    .style("margin-right", "4em")
-    .insert("input")
-    .attr("id", "map_button")
-    .attr("type", "radio")
-    .attr("name", "chart_type")
+    .style("margin-right", "4em").on("click", async function() {
+        slider_panel.select("button").text("Start")
+        await svg.exit();
+        svg.remove();
+        svg = main_panel.append("svg");
+        // Then show map chart
+    })
 
-const barChartButton = main_button_panel.append("label")
+const barChartButton = main_button_panel
+    .append("button")
+    .attr("id", "bar_button")
     .text("Bar Chart")
     .style("font-family", "Montserrat")
-    .insert("input")
-    .attr("id", "bar_button")
-    .attr("type", "radio")
-    .attr("name", "chart_type")
-    .attr("checked", "1");
+    .on("click", function() {
+        //WTF???
+        slider_panel.select("button").transition().duration(1000).ease(d3.easeLinear).text("Start").end()
+        //await svg.exit()
+        //svg.selectAll("*").remove();
+        buildBarFrame(svg).then();
+    })
 
 const slider_panel = body.append("div")
     .attr("id", "slider_panel")
@@ -41,18 +49,23 @@ slider_panel.append("input")
     .attr("min", 10)
     .attr("max", 100);
 
+slider_panel.append("button")
+    .text("Start")
+    .style("margin-left", "2em")
+    .on("click", async function() {
+        let button = d3.select(this)
+        if (button.text() === "Start") {
+            button.text("Stop")
+            await runBars(svg);
+        } else {
+            button.text("Start")
+            stopBars()
+        }
+    })
+
 const main_panel = body.append("div").attr("id", "main_panel");
 
 var svg = main_panel.append("svg");
 
 
-main_panel.append("button")
-    .text("Repeat")
-    .on("click", async function () {
-        svg.remove();
-        svg = main_panel.append("svg");
-        await runBars(svg, data);
-    })
-
-buildBarsFrameAndPrepareData(svg, data);
-await runBars(svg);
+prepareBarData(data)

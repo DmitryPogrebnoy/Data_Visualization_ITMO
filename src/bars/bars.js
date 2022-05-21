@@ -40,7 +40,7 @@ const k = 1
 function computeFrames(data) {
     const countryNames = new Set(data.map((d) => d.country));
     const rollupedData = d3.rollup(
-        data, ([d]) => d.deaths, (d) => d.date, (d) => d.country
+        data, ([d]) => d.confirmed, (d) => d.date, (d) => d.country
     );
     const dateValues =  Array.from(rollupedData).sort(([a], [b]) => d3.ascending(a.key, b.key))
 
@@ -93,7 +93,7 @@ function labels(svg, prev, next) {
         .attr("text-anchor", "end")
         .selectAll("text");
 
-    let is_enough_space_for_label = d => x(d.value) > 100;
+    let is_enough_space_for_label = d => x(d.value) > 120;
 
     // Return function for update
     return ([date, data], transition) => label = label
@@ -212,15 +212,14 @@ let prevFrames;
 let nextFrames;
 
 const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
+let categoryByName;
 
 let updateBars;
 let updateAxis;
 let updateLabels;
 let updateTicker;
 
-function buildBarsFrameAndPrepareData(svg, data) {
-    svg.attr("id", "bars").attr("viewBox", [0, 0, width, height]);
-
+function prepareBarData(data) {
     if (keyframes === undefined) {
         keyframes = computeFrames(data);
     }
@@ -233,39 +232,66 @@ function buildBarsFrameAndPrepareData(svg, data) {
     if (nextFrames === undefined) {
         nextFrames = new Map(nameToFrames.flatMap(([, data]) => d3.pairs(data)));
     }
-
-    const categoryByName = new Map(data.map(d => [d.country, d.region]))
-    colorScale.domain(Array.from(categoryByName.values()));
-    const categorySet = Array.from(new Set(categoryByName.values())).sort((a, b) => d3.ascending(a,b))
-    createColorLegend(svg, categorySet, colorScale)
-
-    const updateColor = d => colorScale(categoryByName.get(d.name));
-    updateBars = bars(svg, prevFrames, nextFrames, updateColor);
-    updateAxis = axis(svg);
-    updateLabels = labels(svg, prevFrames, nextFrames);
-    updateTicker = ticker(svg, keyframes);
-}
-
-
-async function runBars(svg) {
-    const keyframesNumber = keyframes.length;
-    for (let i = 0; i < keyframesNumber; i++) {
-        let keyframe = keyframes[i];
-
-        // Extract the top bar’s value.
-        x.domain([0, keyframe[1][0].value]);
-
-        const transition = svg.transition()
-            .duration(duration)
-            .ease(d3.easeLinear);
-
-        updateAxis(keyframe, transition);
-        updateBars(keyframe, transition);
-        updateLabels(keyframe, transition);
-        updateTicker(keyframe, transition);
-
-        await transition.end();
+    if (categoryByName === undefined) {
+        categoryByName = new Map(data.map(d => [d.country, d.region]))
+        colorScale.domain(Array.from(categoryByName.values()));
     }
 }
 
-export { runBars, buildBarsFrameAndPrepareData };
+
+async function buildBarFrame(svg) {
+    if (svg.attr("id") !== "bars") {
+        svg.attr("id", "bars").attr("viewBox", [0, 0, width, height]);
+
+        const updateColor = d => colorScale(categoryByName.get(d.name));
+        updateBars = bars(svg, prevFrames, nextFrames, updateColor);
+        updateAxis = axis(svg);
+        updateLabels = labels(svg, prevFrames, nextFrames);
+        updateTicker = ticker(svg, keyframes);
+
+        const categorySet = Array.from(new Set(categoryByName.values())).sort((a, b) => d3.ascending(a,b))
+        createColorLegend(svg, categorySet, colorScale)
+        await showBar(svg, keyframes[0])
+    }
+}
+
+let stop = true;
+let currentFrameNumber = 0;
+
+
+async function showBar(svg, keyframe) {
+    // Extract the top bar’s value.
+    x.domain([0, keyframe[1][0].value]);
+
+    const transition = svg.transition()
+        .duration(duration)
+        .ease(d3.easeLinear);
+
+     updateAxis(keyframe, transition);
+     updateBars(keyframe, transition);
+     updateLabels(keyframe, transition);
+     updateTicker(keyframe, transition);
+
+    await transition.end();
+}
+
+async function runBars(svg) {
+    stop = false;
+    const keyframesNumber = keyframes.length;
+    if (currentFrameNumber === keyframesNumber) {
+        currentFrameNumber = 0
+    }
+    for (let i = currentFrameNumber; i < keyframesNumber; i++) {
+        await showBar(svg, keyframes[i])
+        currentFrameNumber = i
+        if (stop) {
+            break
+        }
+    }
+}
+
+function stopBars() {
+    stop = true;
+}
+
+export { runBars, stopBars, prepareBarData, buildBarFrame};
