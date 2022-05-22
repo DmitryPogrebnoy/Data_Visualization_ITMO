@@ -1,5 +1,5 @@
-import {runBars, stopBars, prepareBarData, buildBarFrame} from "./bars/bars.js";
-import {loadData} from "./common/loadData.js";
+import {runBars, stopBars, prepareBarData, buildBarFrame} from "./src/bars/bars.js";
+import {loadData} from "./src/common/loadData.js";
 
 // Load data
 const data = await loadData();
