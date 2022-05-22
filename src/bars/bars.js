@@ -14,7 +14,7 @@ const barSize = 48;
 const height = margin.top + barSize * n + margin.bottom;
 const width = 1300;
 
-const duration = 500;
+const duration = 400;
 
 // Define y scale
 const y = d3.scaleBand()
@@ -42,7 +42,7 @@ function computeFrames(data) {
     const rollupedData = d3.rollup(
         data, ([d]) => d.confirmed, (d) => d.date, (d) => d.country
     );
-    const dateValues =  Array.from(rollupedData).sort(([a], [b]) => d3.ascending(a.key, b.key))
+    const dateValues = Array.from(rollupedData).sort(([a], [b]) => d3.ascending(a.key, b.key))
 
     let keyframes = [];
     let ka, a, kb, b;
@@ -117,7 +117,7 @@ function labels(svg, prev, next) {
         )
         .call(bar => bar.transition(transition)
             .attr("text-anchor", d => {
-                if (is_enough_space_for_label(d)){
+                if (is_enough_space_for_label(d)) {
                     return "end"
                 } else {
                     return "start"
@@ -127,7 +127,7 @@ function labels(svg, prev, next) {
                 if (is_enough_space_for_label(d)) {
                     return `translate(${x(d.value)},${y(d.rank)})`
                 } else {
-                    return `translate(${x(d.value)+10},${y(d.rank)})`
+                    return `translate(${x(d.value) + 10},${y(d.rank)})`
                 }
             })
             .call(g => g.select("tspan").tween("text", d => textTween((prev.get(d) || d).value, d.value))))
@@ -166,7 +166,7 @@ function ticker(svg, keyframes) {
 
     const now = svg.append("text")
         .style("font", "bold Montserrat")
-        .style("font-size", `${barSize/2}px`)
+        .style("font-size", `${barSize / 2}px`)
         .style("font-variant-numeric", "tabular-nums")
         .attr("text-anchor", "end")
         .attr("x", width - 20)
@@ -186,8 +186,8 @@ function createColorLegend(svg, category, color) {
         .data(category)
         .enter()
         .append("rect")
-        .attr("x", (d, i) => width - 300 + Math.floor(i/2)*100)
-        .attr("y", (d, i) => 10 + (i%2)*(size+5))
+        .attr("x", (d, i) => width - 300 + Math.floor(i / 2) * 100)
+        .attr("y", (d, i) => 10 + (i % 2) * (size + 5))
         .attr("width", size)
         .attr("height", size)
         .style("fill", (d) => color(d))
@@ -197,8 +197,8 @@ function createColorLegend(svg, category, color) {
         .data(category)
         .enter()
         .append("text")
-        .attr("x", (d, i) => width - 300 + Math.floor(i/2)*100 + size*1.2)
-        .attr("y", (d, i) => 10 + (i%2)*(size+5) + (size/2)) // 100 is where the first dot appears. 25 is the distance between dots
+        .attr("x", (d, i) => width - 300 + Math.floor(i / 2) * 100 + size * 1.2)
+        .attr("y", (d, i) => 10 + (i % 2) * (size + 5) + (size / 2)) // 100 is where the first dot appears. 25 is the distance between dots
         .style("fill", (d) => color(d))
         .text((d) => d)
         .attr("text-anchor", "left")
@@ -219,7 +219,7 @@ let updateAxis;
 let updateLabels;
 let updateTicker;
 
-function prepareBarData(data) {
+export function prepareBarData(data) {
     if (keyframes === undefined) {
         keyframes = computeFrames(data);
     }
@@ -239,7 +239,7 @@ function prepareBarData(data) {
 }
 
 
-async function buildBarFrame(svg) {
+export function buildBarFrame(svg) {
     svg.attr("id", "bars").attr("viewBox", [0, 0, width, height]);
 
     const updateColor = d => colorScale(categoryByName.get(d.name));
@@ -248,16 +248,12 @@ async function buildBarFrame(svg) {
     updateLabels = labels(svg, prevFrames, nextFrames);
     updateTicker = ticker(svg, keyframes);
 
-    const categorySet = Array.from(new Set(categoryByName.values())).sort((a, b) => d3.ascending(a,b))
+    const categorySet = Array.from(new Set(categoryByName.values())).sort((a, b) => d3.ascending(a, b))
     createColorLegend(svg, categorySet, colorScale)
-    await showBar(svg, keyframes[0])
 }
 
-let stop = true;
-let currentFrameNumber = 0;
-
-
-async function showBar(svg, keyframe) {
+export function showBars(svg, currentFrameNumber) {
+    let keyframe = keyframes[currentFrameNumber]
     // Extract the top bar’s value.
     x.domain([0, keyframe[1][0].value]);
 
@@ -265,31 +261,8 @@ async function showBar(svg, keyframe) {
         .duration(duration)
         .ease(d3.easeLinear);
 
-     updateAxis(keyframe, transition);
-     updateBars(keyframe, transition);
-     updateLabels(keyframe, transition);
-     updateTicker(keyframe, transition);
-
-    await transition.end();
+    updateAxis(keyframe, transition);
+    updateBars(keyframe, transition);
+    updateLabels(keyframe, transition);
+    updateTicker(keyframe, transition);
 }
-
-async function runBars(svg) {
-    stop = false;
-    const keyframesNumber = keyframes.length;
-    if (currentFrameNumber === keyframesNumber) {
-        currentFrameNumber = 0
-    }
-    for (let i = currentFrameNumber; i < keyframesNumber; i++) {
-        await showBar(svg, keyframes[i])
-        currentFrameNumber = i
-        if (stop) {
-            break
-        }
-    }
-}
-
-function stopBars() {
-    stop = true;
-}
-
-export { runBars, stopBars, prepareBarData, buildBarFrame};
