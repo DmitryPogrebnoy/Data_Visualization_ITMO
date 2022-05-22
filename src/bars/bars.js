@@ -34,8 +34,6 @@ function buildFrame(names, value) {
     return data;
 }
 
-// Number of frames per day
-const k = 1
 
 function computeFrames(data) {
     const countryNames = new Set(data.map((d) => d.country));
@@ -45,17 +43,13 @@ function computeFrames(data) {
     const dateValues = Array.from(rollupedData).sort(([a], [b]) => d3.ascending(a.key, b.key))
 
     let keyframes = [];
-    let ka, a, kb, b;
-    for ([[ka, a], [kb, b]] of d3.pairs(dateValues)) {
-        for (let i = 0; i < k; ++i) {
-            const t = i / k;
-            keyframes.push([
-                new Date(ka * (1 - t) + kb * t),
-                buildFrame(countryNames, country => (a.get(country) || 0) * (1 - t) + (b.get(country) || 0) * t)
-            ]);
-        }
+    let ka, a;
+    for ([ka, a] of dateValues) {
+        keyframes.push([
+            new Date(ka),
+            buildFrame(countryNames, country => (a.get(country) || 0))
+        ]);
     }
-    keyframes.push([new Date(kb), buildFrame(dateValues, country => b.get(country) || 0)]);
 
     return keyframes;
 }
