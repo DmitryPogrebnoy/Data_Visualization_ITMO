@@ -32,12 +32,21 @@ const barChartButton = main_button_panel
     .attr("id", "bar_button")
     .text("Bar Chart")
     .style("font-family", "Montserrat")
-    .on("click", function() {
-        //WTF???
-        slider_panel.select("button").transition().duration(1000).ease(d3.easeLinear).text("Start").end()
-        //await svg.exit()
-        //svg.selectAll("*").remove();
-        buildBarFrame(svg).then();
+    .on("click", async function() {
+        /*let start_button = slider_panel
+            .select("#start_button");
+        if (start_button.text() !== "Start") {
+            //stopBars();
+            //svg.interrupt()
+            start_button
+                .transition()
+                .duration(10000)
+                .ease(d3.easeLinear)
+                .tween("text", _ => "Start");
+        }*/
+
+        svg.selectAll("*").remove();
+        await buildBarFrame(svg);
     })
 
 const slider_panel = body.append("div")
@@ -50,6 +59,7 @@ slider_panel.append("input")
     .attr("max", 100);
 
 slider_panel.append("button")
+    .attr("id", "start_button")
     .text("Start")
     .style("margin-left", "2em")
     .on("click", async function() {
@@ -68,4 +78,5 @@ const main_panel = body.append("div").attr("id", "main_panel");
 var svg = main_panel.append("svg");
 
 
-prepareBarData(data)
+prepareBarData(data);
+await buildBarFrame(svg);

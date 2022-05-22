@@ -240,19 +240,17 @@ function prepareBarData(data) {
 
 
 async function buildBarFrame(svg) {
-    if (svg.attr("id") !== "bars") {
-        svg.attr("id", "bars").attr("viewBox", [0, 0, width, height]);
+    svg.attr("id", "bars").attr("viewBox", [0, 0, width, height]);
 
-        const updateColor = d => colorScale(categoryByName.get(d.name));
-        updateBars = bars(svg, prevFrames, nextFrames, updateColor);
-        updateAxis = axis(svg);
-        updateLabels = labels(svg, prevFrames, nextFrames);
-        updateTicker = ticker(svg, keyframes);
+    const updateColor = d => colorScale(categoryByName.get(d.name));
+    updateBars = bars(svg, prevFrames, nextFrames, updateColor);
+    updateAxis = axis(svg);
+    updateLabels = labels(svg, prevFrames, nextFrames);
+    updateTicker = ticker(svg, keyframes);
 
-        const categorySet = Array.from(new Set(categoryByName.values())).sort((a, b) => d3.ascending(a,b))
-        createColorLegend(svg, categorySet, colorScale)
-        await showBar(svg, keyframes[0])
-    }
+    const categorySet = Array.from(new Set(categoryByName.values())).sort((a, b) => d3.ascending(a,b))
+    createColorLegend(svg, categorySet, colorScale)
+    await showBar(svg, keyframes[0])
 }
 
 let stop = true;
