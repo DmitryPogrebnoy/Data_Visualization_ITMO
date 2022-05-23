@@ -14,7 +14,7 @@ const barSize = 48;
 const height = margin.top + barSize * n + margin.bottom;
 const width = 1300;
 
-const duration = 400;
+const duration = 500;
 
 // Define y scale
 const y = d3.scaleBand()
