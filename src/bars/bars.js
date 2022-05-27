@@ -24,36 +24,6 @@ const y = d3.scaleBand()
 // Define x scale
 const x = d3.scaleLinear([0, 1], [margin.left, width - margin.right]);
 
-// Frame {name, value, rank}
-function buildFrame(names, value) {
-    const data = Array.from(names, name => ({name, value: value(name)}));
-    data.sort((a, b) => d3.descending(a.value, b.value));
-    for (let i = 0; i < data.length; ++i) {
-        data[i].rank = Math.min(n, i);
-    }
-    return data;
-}
-
-
-function computeFrames(data) {
-    const countryNames = new Set(data.map((d) => d.country));
-    const rollupedData = d3.rollup(
-        data, ([d]) => d.confirmed, (d) => d.date, (d) => d.country
-    );
-    const dateValues = Array.from(rollupedData).sort(([a], [b]) => d3.ascending(a.key, b.key))
-
-    let keyframes = [];
-    let ka, a;
-    for ([ka, a] of dateValues) {
-        keyframes.push([
-            new Date(ka),
-            buildFrame(countryNames, country => (a.get(country) || 0))
-        ]);
-    }
-
-    return keyframes;
-}
-
 
 function bars(svg, prev, next, color) {
     // Create bars
@@ -213,10 +183,7 @@ let updateAxis;
 let updateLabels;
 let updateTicker;
 
-export function prepareBarData(data) {
-    if (keyframes === undefined) {
-        keyframes = computeFrames(data);
-    }
+export function prepareBarData(data, keyframes) {
     if (nameToFrames === undefined) {
         nameToFrames = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name);
     }
@@ -233,7 +200,7 @@ export function prepareBarData(data) {
 }
 
 
-export function buildBarFrame(svg) {
+export function buildBarFrame(svg, keyframes) {
     svg.attr("id", "bars").attr("viewBox", [0, 0, width, height]);
 
     const updateColor = d => colorScale(categoryByName.get(d.name));
@@ -246,7 +213,7 @@ export function buildBarFrame(svg) {
     createColorLegend(svg, categorySet, colorScale)
 }
 
-export function showBars(svg, currentFrameNumber) {
+export function showBars(svg, currentFrameNumber, keyframes) {
     let keyframe = keyframes[currentFrameNumber]
     // Extract the top bar’s value.
     x.domain([0, keyframe[1][0].value]);
