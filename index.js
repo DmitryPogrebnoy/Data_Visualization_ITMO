@@ -11,23 +11,25 @@ const keyframes = computeFrames(data);
 const BARS_MODE = 'bars';
 const MAP_MODE = 'map';
 
-let mode = 'bars';
+let mode = BARS_MODE;
+let isRunning = false;
 
 let timer;
 let currentFrameNumber = 0;
 
-function displayVisualizationByMode() {
-    switch (mode) {
+function displayVisualizationByMode(new_mode) {
+    switch (new_mode) {
         case BARS_MODE:
+            mode = new_mode;
             showBars(svg, currentFrameNumber, keyframes);
             break;
 
         case MAP_MODE:
+            mode = new_mode;
             showMap(svg, keyframes[currentFrameNumber]);
             break;
     }
 }
-
 
 const body = d3.select("body");
 const head = body.append("div").attr("id", "head").attr("align", "center")
@@ -45,25 +47,21 @@ const mapChartButton = main_button_panel
     .style("font-family", "Montserrat")
     .style("margin-right", "4em")
     .on("click", function () {
-        mode = MAP_MODE;
-
         // TODO: Разобраться с легендой и корректно её вывести.
         //let legendSvg = main_panel.append("svg");
-
-        // TODO: Разобраться со стартом/стопом, 
-        // на данный момент некоррректно работает старт/стоп при переключении между визуализациями
-        /*
         if (timer !== undefined) {
             timer.stop();
         }
-        */
 
-        slider_panel.select("button").text("Start")
-
-        svg.remove();
-        svg = main_panel.append("svg");
-
-        showMap(svg, keyframes[currentFrameNumber]);
+        d3.selectAll("*").interrupt();
+        svg.selectAll("*").remove();
+        displayVisualizationByMode(MAP_MODE);
+        if (isRunning) {
+            timer = d3.interval(() => {
+                currentFrameNumber += 1;
+                displayVisualizationByMode(MAP_MODE)
+            }, 500)
+        }
     })
 
 const barChartButton = main_button_panel
@@ -72,21 +70,20 @@ const barChartButton = main_button_panel
     .text("Bar Chart")
     .style("font-family", "Montserrat")
     .on("click", function () {
-        mode = BARS_MODE;
-
-        // TODO: Разобраться со стартом/стопом, 
-        // на данный момент некоррректно работает старт/стоп при переключении между визуализациями
-        /*
         if (timer !== undefined) {
             timer.stop();
         }
-        */
 
         d3.selectAll("*").interrupt();
-        slider_panel.select("#start_button").text("Start");
         svg.selectAll("*").remove();
         buildBarFrame(svg, keyframes);
-        showBars(svg, currentFrameNumber, keyframes);
+        displayVisualizationByMode(BARS_MODE)
+        if (isRunning) {
+            timer = d3.interval(() => {
+                currentFrameNumber += 1;
+                displayVisualizationByMode(BARS_MODE)
+            }, 500)
+        }
     })
 
 const slider_panel = body.append("div")
@@ -105,12 +102,14 @@ slider_panel.append("button")
     .on("click", function () {
         let button = d3.select(this)
         if (button.text() === "Start") {
+            isRunning = true;
             button.text("Stop")
             timer = d3.interval(() => {
                 currentFrameNumber += 1;
-                displayVisualizationByMode();
+                displayVisualizationByMode(mode);
             }, 500)
         } else {
+            isRunning = false;
             button.text("Start")
             timer.stop()
         }
