@@ -1,4 +1,5 @@
 import { domain, minColor, maxColor } from './constants.js';
+import { loadCountryData } from "../common/loadData.js";
 
 // Размеры элемента с картой.
 const width = 1000;
@@ -16,7 +17,7 @@ const margin = {
 const projection = d3.geoEqualEarth();
 const path = d3.geoPath(projection);
 const outline = ({ type: "Sphere" });
-const world = JSON.parse(worldmap);
+const world = await loadCountryData();
 const countries = topojson.feature(world, world.objects.countries);
 
 
