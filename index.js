@@ -3,6 +3,7 @@ import { showMap } from './src/map/map.js';
 import { showLegend } from "./src/map/legend.js";
 import { loadData } from "./src/common/loadData.js";
 import { computeFrames } from './src/common/handleKeyFrames.js'
+import { createSlider, updateSliderDot } from './src/slider/slider.js'
 
 // Load data
 const data = await loadData();
@@ -69,11 +70,21 @@ const mapChartButton = main_button_panel
 
         d3.selectAll("*").interrupt();
         svg.selectAll("*").remove();
-        displayVisualizationByMode(MAP_MODE);
+
+        if (currentFrameNumber >= keyframes.length)
+            timer.stop();
+        else
+            displayVisualizationByMode(MAP_MODE);
+
         if (isRunning) {
             timer = d3.interval(() => {
                 currentFrameNumber += 1;
-                displayVisualizationByMode(MAP_MODE)
+                if (currentFrameNumber >= keyframes.length)
+                    timer.stop();
+                else {
+                    updateSliderDot(currentFrameNumber)
+                    displayVisualizationByMode(MAP_MODE)
+                }
             }, 500)
         }
     })
@@ -93,11 +104,21 @@ const barChartButton = main_button_panel
         d3.selectAll("*").interrupt();
         svg.selectAll("*").remove();
         buildBarFrame(svg, keyframes);
-        displayVisualizationByMode(BARS_MODE)
+
+        if (currentFrameNumber >= keyframes.length)
+            timer.stop();
+        else
+            displayVisualizationByMode(BARS_MODE);
+
         if (isRunning) {
             timer = d3.interval(() => {
                 currentFrameNumber += 1;
-                displayVisualizationByMode(BARS_MODE)
+                if (currentFrameNumber >= keyframes.length)
+                    timer.stop();
+                else {
+                    updateSliderDot(currentFrameNumber)
+                    displayVisualizationByMode(BARS_MODE)
+                }
             }, 500)
         }
     })
@@ -105,29 +126,32 @@ const barChartButton = main_button_panel
 const slider_panel = body.append("div")
     .attr("id", "slider_panel")
     .attr("align", "center")
-    .style("margin-top", "2em");
-slider_panel.append("input")
-    .attr("type", "range")
-    .attr("min", 10)
-    .attr("max", 100);
-
+    .style("display", "flex")
+    .style("justify-content", "center")
+    .style("align-items", "center")
+createSlider(slider_panel, (newFrameNumber) => {
+    currentFrameNumber = newFrameNumber
+    displayVisualizationByMode(mode)
+})
 slider_panel.append("button")
     .attr("id", "start_button")
     .text("Start")
     .style("margin-left", "2em")
+    .style("margin-bot", "2em")
     .on("click", function () {
         let button = d3.select(this)
         if (button.text() === "Start") {
             isRunning = true;
             button.text("Stop")
             timer = d3.interval(() => {
-                if (currentFrameNumber >= keyframes.length) {
+                if (currentFrameNumber >= keyframes.length - 1) {
                     isRunning = false;
                     button.text("Start");
                     timer.stop();
                 }
                 else {
                     currentFrameNumber += 1;
+                    updateSliderDot(currentFrameNumber)
                     displayVisualizationByMode(mode);
                 }
             }, 500)
@@ -144,7 +168,7 @@ const mapLegend = main_panel.append("div")
     .attr("align", "left")
     .attr("style", "display:none; height:30px; width:400px; margin-bottom:50px;");
 
-var svg = main_panel.append("svg");
+var svg = main_panel.append("svg").attr("id", "main_svg");
 var legendSvg = mapLegend.append("svg");
 
 prepareBarData(data, keyframes);

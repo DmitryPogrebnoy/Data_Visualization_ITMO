@@ -150,7 +150,7 @@ function createColorLegend(svg, category, color) {
         .data(category)
         .enter()
         .append("rect")
-        .attr("x", (d, i) => width - 300 + Math.floor(i / 2) * 100)
+        .attr("x", (d, i) => 10 + Math.floor(i / 2) * 100)
         .attr("y", (d, i) => 10 + (i % 2) * (size + 5))
         .attr("width", size)
         .attr("height", size)
@@ -161,7 +161,7 @@ function createColorLegend(svg, category, color) {
         .data(category)
         .enter()
         .append("text")
-        .attr("x", (d, i) => width - 300 + Math.floor(i / 2) * 100 + size * 1.2)
+        .attr("x", (d, i) => 10 + Math.floor(i / 2) * 100 + size * 1.2)
         .attr("y", (d, i) => 10 + (i % 2) * (size + 5) + (size / 2)) // 100 is where the first dot appears. 25 is the distance between dots
         .style("fill", (d) => color(d))
         .text((d) => d)
@@ -225,5 +225,5 @@ export function showBars(svg, currentFrameNumber, keyframes) {
     updateAxis(keyframe, transition);
     updateBars(keyframe, transition);
     updateLabels(keyframe, transition);
-    updateTicker(keyframe, transition);
+    updateTicker(keyframe, svg.transition().duration(1).ease(d3.easeLinear));
 }

@@ -1,5 +1,6 @@
 import { domain, minColor, maxColor } from './constants.js';
 import { loadCountryData } from "../common/loadData.js";
+import { hover } from './hover.js';
 
 // Размеры элемента с картой.
 const width = 1000;
@@ -92,6 +93,8 @@ export function showMap(svg, keyframe) {
         .on("mouseover mousemove", function (event, d) {
             const pointer = d3.pointer(event);
             const data =
+                d.properties.name
+                + "\n" +
                 "Confirmed cases: " + keyframe[1]?.find(item => item.name === d.properties.name)?.value.toString()
                 + "\n" +
                 "Deaths: " + keyframe[1]?.find(item => item.name === d.properties.name)?.deaths.toString()
