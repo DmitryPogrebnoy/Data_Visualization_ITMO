@@ -1,3 +1,5 @@
+import {domain, minColor, maxColor} from './constants.js';
+
 // Copyright 2021, Observable Inc.
 // Released under the ISC license.
 // https://observablehq.com/@d3/color-legend
@@ -7,9 +9,9 @@ function Legend(svg, color, {
     width = 320,
     height = 44 + tickSize,
     marginTop = 18,
-    marginRight = 0,
+    marginRight = 25,
     marginBottom = 16 + tickSize,
-    marginLeft = 0,
+    marginLeft = 5,
     ticks = width / 64,
     tickFormat,
     tickValues
@@ -38,10 +40,10 @@ function Legend(svg, color, {
 
         x = color.copy().rangeRound(d3.quantize(d3.interpolate(marginLeft, width - marginRight), n));
 
-        svg.append("image")
+        d3.select('#map-legend').append("image")
             .attr("x", marginLeft)
             .attr("y", marginTop)
-            .attr("width", width - marginLeft - marginRight)
+            .attr("width", width)
             .attr("height", height - marginTop - marginBottom)
             .attr("preserveAspectRatio", "none")
             .attr("xlink:href", ramp(color.copy().domain(d3.quantize(d3.interpolate(0, 1), n))).toDataURL());
@@ -150,7 +152,7 @@ function Legend(svg, color, {
  * 
  */
 export function showLegend(svg) {
-    Legend(svg, d3.scaleSequential([0, 1000], d3.interpolateRgb("#e8776f", "#730c05")), {
+    Legend(svg, d3.scaleSequential(domain, d3.interpolateRgb(minColor, maxColor)), {
         title: "Number of confirmed cases of COVID19"
     })
 }

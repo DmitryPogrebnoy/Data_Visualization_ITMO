@@ -1,6 +1,16 @@
+import { domain, minColor, maxColor } from './constants.js';
+
 // Размеры элемента с картой.
 const width = 1000;
 const height = 600;
+
+// Для даты.
+const margin = {
+    top: 80,
+    right: 6,
+    bottom: 6,
+    left: 6
+};
 
 // Необходимые параметры для отображения карты.
 const projection = d3.geoEqualEarth();
@@ -9,22 +19,32 @@ const outline = ({ type: "Sphere" });
 const world = JSON.parse(worldmap);
 const countries = topojson.feature(world, world.objects.countries);
 
-// Диапазон допустимых значений (в данном случае - случаев заражения),
-// именно в этом диапазоне будет применяться закрашивание 
-// с соответствующим цветом для минимального, максимального и промежуточных значений.
-// (работает с помощью встроенной функции d3 для интерполяции).
 
-// на данный момент для максимального значения взято число 1 000 000
-// TODO: нужно подобрать более подходящее и соответствующую цветовую гамму.
-const domain = [0, 100000];
-const minColor = "#e8776f";
-const maxColor = "#730c05";
 
 // Функция для закрашивания стран на карте.
 const color = d3.scaleSequential()
     .domain(domain)
     .interpolator(d3.interpolateRgb(minColor, maxColor))
-    .unknown("#ccc")
+    .unknown("#ccc");
+
+// Функция для вывода даты.
+function ticker(svg, keyframe) {
+    const formatDate = d3.utcFormat("%d %B %Y")
+
+    const now = svg.append("text")
+        .style("font", "bold Montserrat")
+        .style("font-size", `${50 / 2}px`)
+        .style("font-variant-numeric", "tabular-nums")
+        .attr("text-anchor", "end")
+        .attr("x", width - 20)
+        .attr("y", margin.top + 50 * (10 - 0.45))
+        .attr("dy", "0.32em")
+        .text(formatDate(keyframe[0]));
+
+    return ([date], transition) => {
+        transition.end().then(() => now.text(formatDate(date)));
+    };
+}
 
 /**
  * Функция отвечает за отображение карты.
@@ -32,8 +52,12 @@ const color = d3.scaleSequential()
  * TODO: Многое нуждается в доработке
  */
 export function showMap(svg, keyframe) {
+    svg.selectAll("*").remove();
+
+    d3.select("map").remove();
     svg.attr("id", "map").attr("viewBox", [0, 0, width, height]);
 
+    d3.select("defs").remove();
     const defs = svg.append("defs");
 
     // set up outline, clipping and background of map
@@ -74,6 +98,8 @@ export function showMap(svg, keyframe) {
         .attr("stroke", "white")
         .attr("stroke-linejoin", "round")
         .attr("d", path);
+
+    ticker(svg, keyframe);
 
     return svg.node();
 }

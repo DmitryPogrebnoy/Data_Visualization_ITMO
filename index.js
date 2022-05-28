@@ -31,6 +31,20 @@ function displayVisualizationByMode(new_mode) {
     }
 }
 
+function showMapLegendByMode(new_mode) {
+    const mapLegendEl = document.getElementById("map-legend");
+    switch (new_mode) {
+        case BARS_MODE:
+            mapLegendEl.style.display = 'none';
+            break;
+
+        case MAP_MODE:
+            mapLegendEl.style.display = 'block';
+            showLegend(legendSvg);
+            break;
+    }
+}
+
 const body = d3.select("body");
 const head = body.append("div").attr("id", "head").attr("align", "center")
 head.append("h1").text("Covid-19 Country Spread")
@@ -47,11 +61,11 @@ const mapChartButton = main_button_panel
     .style("font-family", "Montserrat")
     .style("margin-right", "4em")
     .on("click", function () {
-        // TODO: Разобраться с легендой и корректно её вывести.
-        //let legendSvg = main_panel.append("svg");
         if (timer !== undefined) {
             timer.stop();
         }
+
+        showMapLegendByMode(MAP_MODE);
 
         d3.selectAll("*").interrupt();
         svg.selectAll("*").remove();
@@ -73,6 +87,8 @@ const barChartButton = main_button_panel
         if (timer !== undefined) {
             timer.stop();
         }
+
+        showMapLegendByMode(BARS_MODE);
 
         d3.selectAll("*").interrupt();
         svg.selectAll("*").remove();
@@ -116,8 +132,13 @@ slider_panel.append("button")
     })
 
 const main_panel = body.append("div").attr("id", "main_panel");
+const mapLegend = main_panel.append("div")
+    .attr("id", "map-legend")
+    .attr("align", "left")
+    .attr("style", "display:none; height:30px; width:400px; margin-bottom:50px;");
 
 var svg = main_panel.append("svg");
+var legendSvg = mapLegend.append("svg");
 
 prepareBarData(data, keyframes);
 buildBarFrame(svg, keyframes);
