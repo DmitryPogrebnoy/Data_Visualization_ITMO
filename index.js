@@ -121,8 +121,15 @@ slider_panel.append("button")
             isRunning = true;
             button.text("Stop")
             timer = d3.interval(() => {
-                currentFrameNumber += 1;
-                displayVisualizationByMode(mode);
+                if (currentFrameNumber >= keyframes.length) {
+                    isRunning = false;
+                    button.text("Start");
+                    timer.stop();
+                }
+                else {
+                    currentFrameNumber += 1;
+                    displayVisualizationByMode(mode);
+                }
             }, 500)
         } else {
             isRunning = false;

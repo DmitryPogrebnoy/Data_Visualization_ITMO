@@ -21,7 +21,6 @@ const world = await loadCountryData();
 const countries = topojson.feature(world, world.objects.countries);
 
 
-
 // Функция для закрашивания стран на карте.
 const color = d3.scaleSequential()
     .domain(domain)
@@ -78,6 +77,8 @@ export function showMap(svg, keyframe) {
         .attr("xlink:href", new URL("#outline", location))
         .attr("fill", "white");
 
+    var tip;
+
     // fill entities according to values
     g.append("g")
         .selectAll("path")
@@ -88,9 +89,19 @@ export function showMap(svg, keyframe) {
             return color(keyframe[1]?.find(item => item.name === d.properties.name)?.value);
         })
         .attr("d", path)
-        // tooltip
-        .append("title")
-        .text(d => `${d.properties.name}`);
+        .on("mouseover mousemove", function (event, d) {
+            const pointer = d3.pointer(event);
+            const data =
+                "Confirmed cases: " + keyframe[1]?.find(item => item.name === d.properties.name)?.value.toString()
+                + "\n" +
+                "Deaths: " + keyframe[1]?.find(item => item.name === d.properties.name)?.deaths.toString()
+                + "\n" +
+                "Recovered: " + keyframe[1]?.find(item => item.name === d.properties.name)?.recovered.toString();
+            tip.call(hover, pointer, data.split("\n"))
+        })
+        .on("mouseout", function () {
+            tip.call(hover, null);
+        });
 
     // draw borders
     g.append("path")
@@ -99,6 +110,16 @@ export function showMap(svg, keyframe) {
         .attr("stroke", "white")
         .attr("stroke-linejoin", "round")
         .attr("d", path);
+
+    // Tooltip
+    tip = g.append("g")
+        .attr("transform", "translate(0, -10)")
+        .selectAll(".hover")
+        .data([""])
+        .join("g") // This gets repositioned in hover()
+        .attr("class", "hover")
+        .style("pointer-events", "none")
+        .style("text-anchor", "middle");
 
     ticker(svg, keyframe);
 
