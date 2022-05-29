@@ -1,9 +1,9 @@
-# Covid-19 Country Spread 💉
+# Covid-19 World Spread 💉
 
 This is a project to visualize the spread of coronavirus in different countries 😷 <br>
 From the charts we can find out which country is better to stay in during the next epidemic 😃
 
-Visualization is available [here](https://dmitrypogrebnoy.github.io/Data_Visualization_ITMO/)
+Visualization is available [here](https://dmitrypogrebnoy.github.io/Data_Visualization_ITMO/).
 
 For the project, we used two datasets - [first one](https://www.kaggle.com/datasets/rinichristy/covid19-coronavirus-pandemic) with coronavirus metrics by country and 
 the second about countries and their parts of the world.
